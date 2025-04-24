@@ -226,7 +226,7 @@ struct CameraView: View {
     }
     
     private func callReagentAPI(imageBase64: String) {
-        let apiURL = "https://noggin.rea.gent/structural-macaw-7976?key=rg_v1_2xjec0fh5t40quqqjbk3f8wzp6duurf1loqa_ngk"
+        let apiURL = "https://noggin.rea.gent/detailed-opossum-9528?key=rg_v1_roudvtug6z0kit2yevcosg9zww4i8xwmznys_ngk"
         
         var request = URLRequest(url: URL(string: apiURL)!)
         request.httpMethod = "POST"
