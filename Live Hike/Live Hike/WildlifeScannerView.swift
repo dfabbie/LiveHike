@@ -42,26 +42,48 @@ struct WildlifeScannerView: View {
                             .bold()
                         
                         HStack {
-                            Text("Animal Type:")
-                                .font(.headline)
-                            Text(result.animalType)
-                                .font(.body)
+                            VStack(alignment: .leading) {
+                                Text(result.name)
+                                    .font(.title3)
+                                    .bold()
+                                if let scientificName = result.scientificName {
+                                    Text(scientificName)
+                                    .font(.subheadline)
+                                    .italic()
+                                }
+                            }
+                            Spacer()
+
+                            ZStack {
+                                Circle()
+                                    .fill(dangerColor(level: result.dangerLevel))
+                                    .frame(width: 36, height: 36)
+                                
+                                if result.isDangerous {
+                                    Image(systemName: "exclamationmark.triangle.fill")
+                                        .foregroundColor(.white)
+                                } else if result.isAllergen {
+                                    Image(systemName: "allergens")
+                                        .foregroundColor(.white)
+                                } else {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundColor(.white)
+                                }
+                            }
                         }
-                        
-                        HStack {
-                            Text("Confidence:")
-                                .font(.headline)
-                            Text("\(Int(result.confidence * 100))%")
-                                .font(.body)
-                        }
+
+                        Divider()
+
+                        Text(result.description)
+                            .font(.body)
                         
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Safety Tips:")
                                 .font(.headline)
                             ForEach(result.safetyTips, id: \.self) { tip in
                                 HStack(alignment: .top) {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .foregroundColor(.green)
+                                    Image(systemName: "exclamationmark.circle.fill")
+                                        .foregroundColor(dangerColor(level: result.dangerLevel))
                                     Text(tip)
                                 }
                             }
@@ -117,6 +139,14 @@ struct WildlifeScannerView: View {
             CameraView(image: $scannedImage, isAnalyzing: $isAnalyzing, scanResult: $scanResult)
         }
     }
+    func dangerColor(level: Int) -> Color {
+    switch level {
+    case 3: return Color.red
+    case 2: return Color.orange
+    case 1: return Color.yellow
+    default: return Color.green
+    }
+}
 }
 
 struct CameraView: View {
@@ -153,7 +183,7 @@ struct CameraView: View {
                             self.processImage(selectedImage)
                         },
                         onCancel: {
-            // Do nothing on cancel
+                            // Do nothing on cancel
                         }
                     )
     
@@ -171,7 +201,16 @@ struct CameraView: View {
                 .padding(.bottom, 30)
             }
         }
+        .alert(isPresented: $showErrorAlert) {
+            Alert(
+                title: Text("Error"),
+                message: Text(errorMessage),
+                dismissButton: .default(Text("OK"))
+            )
+        }
     }
+    
+    // Move these functions INSIDE the CameraView struct
     private func processImage(_ capturedImage: UIImage) {
         image = capturedImage
         isAnalyzing = true
@@ -195,7 +234,6 @@ struct CameraView: View {
         
         // the request body
         let requestBody: [String: Any] = [
-            "key": "your_reagent_api_key_here", 
             "image": "data:image/jpeg;base64,\(imageBase64)"
         ]
         
@@ -237,7 +275,7 @@ struct CameraView: View {
             showErrorAlert = true
         }
     }
-}
+} 
 
 class ImagePickerDelegate: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
     let onImageSelected: (UIImage) -> Void
