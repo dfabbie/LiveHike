@@ -1,11 +1,19 @@
 import SwiftUI
 import AVFoundation
 
-struct ScanResult {
-    let animalType: String
-    let confidence: Double
+struct ScanResult: Codable {
+    let name: String
+    let scientificName: String?
+    let isDangerous: Bool
+    let dangerLevel: Int 
+    let isAllergen: Bool
+    let description: String
     let safetyTips: [String]
-    let timestamp: Date
+    let timestamp: Date = Date() 
+    
+    enum CodingKeys: String, CodingKey {
+        case name, scientificName, isDangerous, dangerLevel, isAllergen, description, safetyTips
+    }
 }
 
 struct WildlifeScannerView: View {
@@ -34,26 +42,48 @@ struct WildlifeScannerView: View {
                             .bold()
                         
                         HStack {
-                            Text("Animal Type:")
-                                .font(.headline)
-                            Text(result.animalType)
-                                .font(.body)
+                            VStack(alignment: .leading) {
+                                Text(result.name)
+                                    .font(.title3)
+                                    .bold()
+                                if let scientificName = result.scientificName {
+                                    Text(scientificName)
+                                    .font(.subheadline)
+                                    .italic()
+                                }
+                            }
+                            Spacer()
+
+                            ZStack {
+                                Circle()
+                                    .fill(dangerColor(level: result.dangerLevel))
+                                    .frame(width: 36, height: 36)
+                                
+                                if result.isDangerous {
+                                    Image(systemName: "exclamationmark.triangle.fill")
+                                        .foregroundColor(.white)
+                                } else if result.isAllergen {
+                                    Image(systemName: "allergens")
+                                        .foregroundColor(.white)
+                                } else {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundColor(.white)
+                                }
+                            }
                         }
-                        
-                        HStack {
-                            Text("Confidence:")
-                                .font(.headline)
-                            Text("\(Int(result.confidence * 100))%")
-                                .font(.body)
-                        }
+
+                        Divider()
+
+                        Text(result.description)
+                            .font(.body)
                         
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Safety Tips:")
                                 .font(.headline)
                             ForEach(result.safetyTips, id: \.self) { tip in
                                 HStack(alignment: .top) {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .foregroundColor(.green)
+                                    Image(systemName: "exclamationmark.circle.fill")
+                                        .foregroundColor(dangerColor(level: result.dangerLevel))
                                     Text(tip)
                                 }
                             }
@@ -109,6 +139,14 @@ struct WildlifeScannerView: View {
             CameraView(image: $scannedImage, isAnalyzing: $isAnalyzing, scanResult: $scanResult)
         }
     }
+    func dangerColor(level: Int) -> Color {
+    switch level {
+    case 3: return Color.red
+    case 2: return Color.orange
+    case 1: return Color.yellow
+    default: return Color.green
+    }
+}
 }
 
 struct CameraView: View {
@@ -116,6 +154,9 @@ struct CameraView: View {
     @Binding var isAnalyzing: Bool
     @Binding var scanResult: ScanResult?
     @Environment(\.dismiss) private var dismiss
+
+    @State private var showErrorAlert = false
+    @State private var errorMessage = ""
     
     var body: some View {
         ZStack {
@@ -135,28 +176,18 @@ struct CameraView: View {
                 Spacer()
                 
                 Button(action: {
-                    // In a real app, this would capture an image
-                    // For now, we'll use a mock image and result
-                    image = UIImage(systemName: "photo")
-                    isAnalyzing = true
-                    
-                    // Simulate analysis delay
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                        isAnalyzing = false
-                        scanResult = ScanResult(
-                            animalType: "Black Bear",
-                            confidence: 0.92,
-                            safetyTips: [
-                                "Maintain a safe distance of at least 100 yards",
-                                "Do not approach or feed the bear",
-                                "Make noise to alert the bear of your presence",
-                                "If the bear approaches, stand your ground and speak firmly",
-                                "Carry bear spray and know how to use it"
-                            ],
-                            timestamp: Date()
-                        )
-                        dismiss()
-                    }
+                    let picker = UIImagePickerController()
+                    picker.sourceType = .camera
+                    picker.delegate = ImagePickerDelegate(
+                        onImageSelected: { selectedImage in
+                            self.processImage(selectedImage)
+                        },
+                        onCancel: {
+                            // Do nothing on cancel
+                        }
+                    )
+    
+                    UIApplication.shared.windows.first?.rootViewController?.present(picker, animated: true)
                 }) {
                     Circle()
                         .stroke(Color.white, lineWidth: 3)
@@ -170,6 +201,102 @@ struct CameraView: View {
                 .padding(.bottom, 30)
             }
         }
+        .alert(isPresented: $showErrorAlert) {
+            Alert(
+                title: Text("Error"),
+                message: Text(errorMessage),
+                dismissButton: .default(Text("OK"))
+            )
+        }
+    }
+    
+    // Move these functions INSIDE the CameraView struct
+    private func processImage(_ capturedImage: UIImage) {
+        image = capturedImage
+        isAnalyzing = true
+        
+        if let imageData = capturedImage.jpegData(compressionQuality: 0.8) {
+            let base64String = imageData.base64EncodedString()
+            callReagentAPI(imageBase64: base64String)
+        } else {
+            isAnalyzing = false
+            errorMessage = "Failed to process image"
+            showErrorAlert = true
+        }
+    }
+    
+    private func callReagentAPI(imageBase64: String) {
+        let apiURL = "https://noggin.rea.gent/detailed-opossum-9528?key=rg_v1_roudvtug6z0kit2yevcosg9zww4i8xwmznys_ngk"
+        
+        var request = URLRequest(url: URL(string: apiURL)!)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        // the request body
+        let requestBody: [String: Any] = [
+            "image": "data:image/jpeg;base64,\(imageBase64)"
+        ]
+        
+        // Convert the request body to JSON data
+        if let jsonData = try? JSONSerialization.data(withJSONObject: requestBody) {
+            request.httpBody = jsonData
+            
+            // Create and start the task
+            let task = URLSession.shared.dataTask(with: request) { data, response, error in
+                DispatchQueue.main.async {
+                    self.isAnalyzing = false
+                    
+                    if let error = error {
+                        self.errorMessage = "Error: \(error.localizedDescription)"
+                        self.showErrorAlert = true
+                        return
+                    }
+                    
+                    guard let data = data else {
+                        self.errorMessage = "No data received from API"
+                        self.showErrorAlert = true
+                        return
+                    }
+                    
+                    do {
+                        self.scanResult = try JSONDecoder().decode(ScanResult.self, from: data)
+                        self.dismiss()
+                    } catch {
+                        self.errorMessage = "Error decoding response: \(error.localizedDescription)"
+                        self.showErrorAlert = true
+                    }
+                }
+            }
+            
+            task.resume()
+        } else {
+            isAnalyzing = false
+            errorMessage = "Failed to prepare request"
+            showErrorAlert = true
+        }
+    }
+} 
+
+class ImagePickerDelegate: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+    let onImageSelected: (UIImage) -> Void
+    let onCancel: () -> Void
+    
+    init(onImageSelected: @escaping (UIImage) -> Void, onCancel: @escaping () -> Void) {
+        self.onImageSelected = onImageSelected
+        self.onCancel = onCancel
+    }
+    
+    func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+        picker.dismiss(animated: true)
+        
+        if let image = info[.originalImage] as? UIImage {
+            onImageSelected(image)
+        }
+    }
+    
+    func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+        picker.dismiss(animated: true)
+        onCancel()
     }
 }
 
