@@ -291,7 +291,7 @@ struct PhotoPickerView: UIViewControllerRepresentable {
             if let jsonData = try? JSONSerialization.data(withJSONObject: requestBody) {
                 request.httpBody = jsonData
                 
-                print("Sending request to API...")
+                
                 let task = URLSession.shared.dataTask(with: request) { data, response, error in
                     DispatchQueue.main.async {
                         self.parent.isAnalyzing = false
@@ -314,10 +314,6 @@ struct PhotoPickerView: UIViewControllerRepresentable {
                             return
                         }
                         
-                        // Print the raw response for debugging
-                        if let jsonString = String(data: data, encoding: .utf8) {
-                            print("API Response: \(jsonString)")
-                        }
                         
                         do {
                             let result = try JSONDecoder().decode(ScanResult.self, from: data)
