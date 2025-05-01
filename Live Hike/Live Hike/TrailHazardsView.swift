@@ -7,8 +7,13 @@ struct Hazard: Identifiable {
     let type: String
     let severity: String
     let description: String
-    let reportedDate: String
+    let reportedDate: Date
     let status: String
+    let trailName: String
+    
+    enum CodingKeys: String, CodingKey {
+        case id, type, severity, description, reportedDate, status, trailName
+    }
 }
 
 
