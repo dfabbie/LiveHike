@@ -1,150 +1,139 @@
 import SwiftUI
-
-struct Hazard: Identifiable, Codable {
-    let id = UUID()
-    let type: String
-    let severity: String
-    let description: String
-    let reportedDate: Date
-    let status: String
-    let trailName: String
-    
-    enum CodingKeys: String, CodingKey {
-        case id, type, severity, description, reportedDate, status, trailName
-    }
-}
+import MapKit // Needed for PinLocation coordinate potentially
 
 struct TrailHazardsView: View {
     let trailName: String
-    @State private var selectedHazard: Hazard?
-    @State private var showingAddHazard = false
-    @State private var hazards: [Hazard] = []
-    @State private var newHazardType = ""
-    @State private var newHazardSeverity = "Medium"
-    @State private var newHazardDescription = ""
-    @State private var newHazardStatus = "Active"
-    
-    let severityOptions = ["Low", "Medium", "High"]
-    let statusOptions = ["Active", "Resolved", "Under Review"]
-    
+    @StateObject private var infoManager = TrailInfoManager.shared
+    @State private var hazardPinLocations: [PinLocation] = []
+    @State private var selectedPinLocation: PinLocation?
+
     var body: some View {
         List {
-            ForEach(hazards) { hazard in
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text(hazard.type)
-                            .font(.headline)
-                        Spacer()
-                        Text(hazard.severity)
-                            .font(.subheadline)
-                            .foregroundColor(severityColor(hazard.severity))
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(severityColor(hazard.severity).opacity(0.2))
-                            .cornerRadius(8)
-                    }
-                    
-                    Text(hazard.description)
-                        .font(.body)
-                    
-                    HStack {
-                        Image(systemName: "clock")
-                        Text(hazard.reportedDate, style: .relative)
-                        Spacer()
-                        Text(hazard.status)
-                            .foregroundColor(statusColor(hazard.status))
-                    }
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+            ForEach(hazardPinLocations) { pinLocation in
+                if let hazardPin = infoManager.getHazardPinDetails(for: pinLocation) {
+                    HazardRow(pinLocation: pinLocation, hazardPin: hazardPin)
+                        .contentShape(Rectangle()) 
+                        .onTapGesture {
+                            selectedPinLocation = pinLocation
+                        }
+                } else {
+                     Text("Hazard details unavailable for pin \(pinLocation.id.uuidString.prefix(4))...")
+                          .foregroundColor(.secondary)
                 }
-                .padding(.vertical, 8)
+            }
+            .onDelete { indexSet in
+                deleteHazards(at: indexSet)
             }
         }
         .navigationTitle("\(trailName) Hazards")
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: { showingAddHazard = true }) {
-                    Image(systemName: "plus")
-                }
-            }
+             ToolbarItem(placement: .navigationBarTrailing) {
+                  NavigationLink {
+                      // Find the Trail object to pass to the map view
+                      if let trail = infoManager.getTrailByName(trailName) {
+                           TrailMapView(trail: trail)
+                      } else {
+                           // Handle case where trail isn't found
+                           Text("Trail details not found for map.")
+                      }
+                  } label: {
+                       Image(systemName: "map")
+                  }
+             }
         }
-        .sheet(isPresented: $showingAddHazard) {
-            NavigationView {
-                Form {
-                    Section(header: Text("Hazard Details")) {
-                        TextField("Type (e.g., Rockfall, Wildlife)", text: $newHazardType)
-                        
-                        Picker("Severity", selection: $newHazardSeverity) {
-                            ForEach(severityOptions, id: \.self) { severity in
-                                Text(severity)
-                            }
-                        }
-                        
-                        TextField("Description", text: $newHazardDescription, axis: .vertical)
-                            .lineLimit(3...6)
-                        
-                        Picker("Status", selection: $newHazardStatus) {
-                            ForEach(statusOptions, id: \.self) { status in
-                                Text(status)
-                            }
-                        }
-                    }
-                }
-                .navigationTitle("Add Hazard")
-                .navigationBarItems(
-                    leading: Button("Cancel") {
-                        showingAddHazard = false
-                    },
-                    trailing: Button("Add") {
-                        addHazard()
-                    }
-                    .disabled(newHazardType.isEmpty || newHazardDescription.isEmpty)
-                )
-            }
+        .sheet(item: $selectedPinLocation) { pinLocation in
+             //standard PinDetailView
+              PinDetailView(
+                  pin: pinLocation,
+                  hazardPin: infoManager.getHazardPinDetails(for: pinLocation),
+                  wrongTurnPin: nil, // It's a hazard, so no wrong turn details
+                  onVerify: {
+                      infoManager.verifyPin(pinLocation)
+                      loadHazardPins()
+                  },
+                  onDismiss: {
+                      infoManager.dismissPin(pinLocation)
+                      loadHazardPins()
+                  },
+                  onDelete: {
+                      infoManager.deletePinLocation(pinLocation)
+                      loadHazardPins()
+                  }
+              )
         }
         .onAppear {
-            loadHazards()
+            loadHazardPins()
         }
+        // maybe:Listen for changes from the infoManager if needed
+        // .onReceive(infoManager.$pinLocations) { _ in loadHazardPins() }
+        // .onReceive(infoManager.$hazardPins) { _ in loadHazardPins() }
     }
-    
-    private func addHazard() {
-        let newHazard = Hazard(
-            type: newHazardType,
-            severity: newHazardSeverity,
-            description: newHazardDescription,
-            reportedDate: Date(),
-            status: newHazardStatus,
-            trailName: trailName
-        )
-        
-        hazards.append(newHazard)
-        saveHazards()
-        
-        // Reset form
-        newHazardType = ""
-        newHazardSeverity = "Medium"
-        newHazardDescription = ""
-        newHazardStatus = "Active"
-        
-        showingAddHazard = false
+
+    // Helper function to load/filter hazard pins for the current trail
+    private func loadHazardPins() {
+        hazardPinLocations = infoManager.getPinsForTrail(trailName).filter { $0.type == .hazard }
+        print("Loaded \(hazardPinLocations.count) hazard pins for \(trailName)")
     }
-    
-    private func loadHazards() {
-        // Load sample hazards for this trail
-        hazards = [
-            Hazard(type: "Rockfall", severity: "High", description: "Recent rockfall reported near mile marker 2.5. Use caution.", reportedDate: Date().addingTimeInterval(-7200), status: "Active", trailName: trailName),
-            Hazard(type: "Wildlife", severity: "Medium", description: "Bear sighting reported in the area. Keep food properly stored.", reportedDate: Date().addingTimeInterval(-18000), status: "Active", trailName: trailName),
-            Hazard(type: "Weather", severity: "Medium", description: "Heavy rain expected in the next 3 hours. Flash flood warning.", reportedDate: Date().addingTimeInterval(-86400), status: "Active", trailName: trailName),
-            Hazard(type: "Trail Condition", severity: "Low", description: "Muddy conditions on the north section of the trail.", reportedDate: Date().addingTimeInterval(-172800), status: "Active", trailName: trailName),
-            Hazard(type: "Bridge Out", severity: "High", description: "Bridge crossing at mile 4.5 is temporarily closed for repairs.", reportedDate: Date().addingTimeInterval(-259200), status: "Active", trailName: trailName)
-        ]
+
+    // Helper function to handle deletion
+    private func deleteHazards(at offsets: IndexSet) {
+        let pinsToDelete = offsets.map { hazardPinLocations[$0] }
+
+        // tell the manager to delete each one
+        for pin in pinsToDelete {
+            // Only allow deletion if created by current user (simulation)
+            if pin.createdBy == "current_user" {
+                 infoManager.deletePinLocation(pin)
+            } else {
+                 print("Cannot delete pin created by \(pin.createdBy)")
+            
+            }
+        }
+
+        // reoload the local list after deletion attempt
+        loadHazardPins()
     }
-    
-    private func saveHazards() {
-        // In a real app, this would save to a database or cloud storage
-        // For now, we'll just keep them in memory
+}
+
+struct HazardRow: View {
+    let pinLocation: PinLocation
+    let hazardPin: HazardPin
+    // access the manager if needed for status updates, although detail view handles it
+    // @ObservedObject private var infoManager = TrailInfoManager.shared
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(hazardPin.hazardType)
+                    .font(.headline)
+                Spacer()
+                Text(hazardPin.severity)
+                    .font(.subheadline)
+                    .foregroundColor(severityColor(hazardPin.severity))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(severityColor(hazardPin.severity).opacity(0.2))
+                    .cornerRadius(8)
+            }
+
+            Text(hazardPin.description)
+                .font(.body)
+                .foregroundColor(.secondary)
+
+            HStack {
+                Image(systemName: "clock")
+                Text("Reported: \(pinLocation.createdAt, style: .relative) ago")
+                Spacer()
+                Text("V:\(pinLocation.verifiedCount)")
+                Text("D:\(pinLocation.dismissedCount)")
+            }
+            .font(.caption)
+            .foregroundColor(.gray)
+        }
+        .padding(.vertical, 8)
     }
-    
+
+    // helper function for severity color 
     private func severityColor(_ severity: String) -> Color {
         switch severity.lowercased() {
         case "high": return .red
@@ -153,19 +142,12 @@ struct TrailHazardsView: View {
         default: return .gray
         }
     }
-    
-    private func statusColor(_ status: String) -> Color {
-        switch status.lowercased() {
-        case "active": return .red
-        case "resolved": return .green
-        case "under review": return .orange
-        default: return .gray
-        }
-    }
 }
 
 #Preview {
-    NavigationView {
-        TrailHazardsView(trailName: "Pacific Crest Trail")
+    //need to initialize TrailInfoManager with some data for preview
+    let _ = TrailInfoManager.shared 
+    return NavigationView {
+        TrailHazardsView(trailName: "Big C Trail") // Use a trail name from sample data
     }
-} 
+}
