@@ -43,6 +43,45 @@ struct SearchTrailsView: View {
             hazards: [
                 Hazard(type: "Wildfire", severity: "High", description: "Smoke visible near the southern section.", reportedDate: "1 hour ago", status: "Active")
             ]
+        ),
+        Trail(
+            name: "Grizzly Peak Trail",
+            location: "Berkeley Hills, CA",
+            difficulty: "Moderate",
+            length: "4.3 miles",
+            elevation: "1,200 ft",
+            imageName: "grizzlypeak",
+            mapImageName: "grizzlypeak_map",
+            hazards: [
+                Hazard(type: "Wildfire Risk", severity: "High", description: "Dry vegetation and recent heat wave increase fire danger.", reportedDate: "Today", status: "Active"),
+                Hazard(type: "Loose Gravel", severity: "Low", description: "Loose gravel on steep turns near the summit area.", reportedDate: "2 days ago", status: "Active")
+            ]
+        ),
+        Trail(
+            name: "Tilden Park Lake Anza Loop",
+            location: "Berkeley, CA",
+            difficulty: "Easy",
+            length: "2.1 miles",
+            elevation: "300 ft",
+            imageName: "lakeanza",
+            mapImageName: "lakeanza_map",
+            hazards: [
+                Hazard(type: "Wildlife", severity: "Medium", description: "Coyote sightings reported near trailhead. Keep pets leashed.", reportedDate: "Yesterday", status: "Active"),
+                Hazard(type: "Trail Condition", severity: "Low", description: "Some muddy sections after recent rain.", reportedDate: "3 days ago", status: "Active")
+            ]
+        ),
+        Trail(
+            name: "Claremont Canyon Fire Trail",
+            location: "Berkeley, CA",
+            difficulty: "Moderate",
+            length: "3.5 miles",
+            elevation: "1,000 ft",
+            imageName: "claremontcanyon",
+            mapImageName: "claremontcanyon_map",
+            hazards: [
+                Hazard(type: "Heat Warning", severity: "Medium", description: "Temperatures expected to reach 95°F. Bring extra water.", reportedDate: "Today", status: "Active"),
+                Hazard(type: "Trail Closure", severity: "High", description: "Partial closure due to downed tree near mile 1.2.", reportedDate: "4 hours ago", status: "Active")
+            ]
         )
     ]
 
