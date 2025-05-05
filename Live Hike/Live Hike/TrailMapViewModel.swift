@@ -5,7 +5,7 @@ class TrailMapViewModel: ObservableObject {
     @Published var region: MKCoordinateRegion
     @Published var userTrackingMode: MapUserTrackingMode = .none
     
-    @Published var selectedPinForDetail: PinLocation? = nil
+    @Published var selectedPin: PinLocation? = nil
     @Published var showingPinDetailSheet = false
     
     @Published var newPinTypeToAdd: PinLocation.PinType = .hazard
@@ -31,7 +31,7 @@ class TrailMapViewModel: ObservableObject {
     }
     
     func selectPinForDetail(_ pin: PinLocation) {
-        self.selectedPinForDetail = pin
+        self.selectedPin = pin
         self.showingPinDetailSheet = true
     }
     
