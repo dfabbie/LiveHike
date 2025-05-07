@@ -40,16 +40,20 @@ struct WildlifeScannerView: View {
                     .frame(height: 300)
                     .cornerRadius(12)
                     .padding()
+                    .accessibilityLabel("Scanned wildlife image")
                 
                 if isAnalyzing {
                     ProgressView("Analyzing image...")
                         .padding()
+                        .accessibilityLabel("Analyzing image")
+                        .accessibilityAddTraits(.updatesFrequently)
                 } else if let result = scanResult {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 16) {
                             Text("Scan Results")
                                 .font(.title2)
                                 .bold()
+                                .accessibilityAddTraits(.isHeader)
                             
                             HStack {
                                 VStack(alignment: .leading) {
@@ -85,13 +89,17 @@ struct WildlifeScannerView: View {
                                             .foregroundColor(.white)
                                     }
                                 }
+                                .accessibilityLabel("\(result.isDangerous ? "Dangerous" : result.isAllergen ? "Allergen" : "Safe") - \(result.dangerLevel) level")
                             }
+                            .accessibilityElement(children: .combine)
+                            .accessibilityLabel("\(result.name)\(result.scientificName != nil ? ", \(result.scientificName!)" : "")")
 
                             Divider()
 
                             VStack(alignment: .leading, spacing: 12) {
                                 Text("Description")
                                     .font(.headline)
+                                    .accessibilityAddTraits(.isHeader)
                                 Text(result.description)
                                     .font(.body)
                             }
@@ -100,6 +108,7 @@ struct WildlifeScannerView: View {
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text("Habitat")
                                         .font(.headline)
+                                        .accessibilityAddTraits(.isHeader)
                                     Text(habitat)
                                         .font(.body)
                                 }
@@ -109,6 +118,7 @@ struct WildlifeScannerView: View {
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text("Diet")
                                         .font(.headline)
+                                        .accessibilityAddTraits(.isHeader)
                                     Text(diet)
                                         .font(.body)
                                 }
@@ -118,6 +128,7 @@ struct WildlifeScannerView: View {
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text("Behavior")
                                         .font(.headline)
+                                        .accessibilityAddTraits(.isHeader)
                                     Text(behavior)
                                         .font(.body)
                                 }
@@ -127,6 +138,7 @@ struct WildlifeScannerView: View {
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text("Conservation Status")
                                         .font(.headline)
+                                        .accessibilityAddTraits(.isHeader)
                                     Text(conservationStatus)
                                         .font(.body)
                                 }
@@ -135,10 +147,12 @@ struct WildlifeScannerView: View {
                             VStack(alignment: .leading, spacing: 8) {
                                 Text("Safety Tips:")
                                     .font(.headline)
+                                    .accessibilityAddTraits(.isHeader)
                                 ForEach(result.safetyTips, id: \.self) { tip in
                                     HStack(alignment: .top) {
                                         Image(systemName: "exclamationmark.circle.fill")
                                             .foregroundColor(dangerColor(level: result.dangerLevel))
+                                            .accessibilityHidden(true)
                                         Text(tip)
                                     }
                                 }
@@ -147,6 +161,7 @@ struct WildlifeScannerView: View {
                             Text("Scanned at: \(result.timestamp.formatted())")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
+                                .accessibilityLabel("Scanned at \(result.timestamp.formatted())")
                         }
                         .padding()
                         .background(Color(.systemBackground))
@@ -159,10 +174,12 @@ struct WildlifeScannerView: View {
                     Image(systemName: "photo.on.rectangle")
                         .font(.system(size: 60))
                         .foregroundColor(.blue)
+                        .accessibilityHidden(true)
                     
                     Text("Scan Wildlife")
                         .font(.title)
                         .bold()
+                        .accessibilityAddTraits(.isHeader)
                     
                     Text("Select a photo to identify wildlife and get safety tips")
                         .multilineTextAlignment(.center)
@@ -178,6 +195,7 @@ struct WildlifeScannerView: View {
             }) {
                 HStack {
                     Image(systemName: "photo.on.rectangle")
+                        .accessibilityHidden(true)
                     Text(scannedImage == nil ? "Select Photo" : "Select Another")
                 }
                 .font(.headline)
@@ -187,6 +205,8 @@ struct WildlifeScannerView: View {
                 .foregroundColor(.white)
                 .cornerRadius(10)
             }
+            .accessibilityLabel(scannedImage == nil ? "Select Photo" : "Select Another Photo")
+            .accessibilityHint("Double tap to select a photo for wildlife scanning")
             .padding(.horizontal)
             .padding(.bottom)
         }
@@ -291,7 +311,7 @@ struct PhotoPickerView: UIViewControllerRepresentable {
             if let jsonData = try? JSONSerialization.data(withJSONObject: requestBody) {
                 request.httpBody = jsonData
                 
-                
+                print("Sending request to API...")
                 let task = URLSession.shared.dataTask(with: request) { data, response, error in
                     DispatchQueue.main.async {
                         self.parent.isAnalyzing = false
@@ -314,6 +334,10 @@ struct PhotoPickerView: UIViewControllerRepresentable {
                             return
                         }
                         
+                        // Print the raw response for debugging
+                        if let jsonString = String(data: data, encoding: .utf8) {
+                            print("API Response: \(jsonString)")
+                        }
                         
                         do {
                             let result = try JSONDecoder().decode(ScanResult.self, from: data)
