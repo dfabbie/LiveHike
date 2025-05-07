@@ -23,6 +23,7 @@ struct LandingView: View {
                         Color.black.opacity(0.3)
                             .edgesIgnoringSafeArea(.all)
                     )
+                    .accessibilityHidden(true)
                 
                 VStack(spacing: 40) {
                     // Logo
@@ -31,6 +32,7 @@ struct LandingView: View {
                         .scaledToFit()
                         .frame(width: 200, height: 200)
                         .padding(.top, 10)
+                        .accessibilityLabel("Live Hike Logo")
                     
                     Spacer()
                     
@@ -39,6 +41,7 @@ struct LandingView: View {
                         .multilineTextAlignment(.center)
                         .padding()
                         .foregroundColor(.white)
+                        .accessibilityAddTraits(.isHeader)
                     
                     VStack(spacing: 20) {
                         NavigationLink(destination: SearchTrailsView()) {
@@ -46,6 +49,7 @@ struct LandingView: View {
                                 Text("Search Trails")
                                     .font(.headline)
                                 Image(systemName: "arrow.right")
+                                    .accessibilityHidden(true)
                             }
                             .padding()
                             .frame(width: 200)
@@ -53,10 +57,13 @@ struct LandingView: View {
                             .foregroundColor(.white)
                             .cornerRadius(10)
                         }
+                        .accessibilityLabel("Search Trails")
+                        .accessibilityHint("Double tap to search for hiking trails")
                         
                         NavigationLink(destination: WildlifeScannerView()) {
                             HStack {
                                 Image(systemName: "camera.viewfinder")
+                                    .accessibilityHidden(true)
                                 Text("Wildlife Scanner")
                                     .font(.headline)
                             }
@@ -66,6 +73,8 @@ struct LandingView: View {
                             .foregroundColor(.white)
                             .cornerRadius(10)
                         }
+                        .accessibilityLabel("Wildlife Scanner")
+                        .accessibilityHint("Double tap to scan and identify wildlife")
                     }
                     Spacer()
                 }
