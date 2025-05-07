@@ -29,7 +29,7 @@ struct SearchTrailsView: View {
             imageName: "rainier",
             mapImageName: "rainier_map",
             hazards: [
-                Hazard(type: "Avalanche", severity: "High", description: "Fresh snowpack unstable above 6,000ft.", reportedDate: "3 hours ago", status: "Active")
+                Hazard(type: "Avalanche", severity: "High", description: "Fresh snowpack unstable above 6,000ft.", reportedDate: "3 hours ago", status: "Active", trailName: "Mount Rainier Summit")
             ]
         ),
         Trail(
@@ -41,7 +41,7 @@ struct SearchTrailsView: View {
             imageName: "pct",
             mapImageName: "pct_map",
             hazards: [
-                Hazard(type: "Wildfire", severity: "High", description: "Smoke visible near the southern section.", reportedDate: "1 hour ago", status: "Active")
+                Hazard(type: "Wildfire", severity: "High", description: "Smoke visible near the southern section.", reportedDate: "1 hour ago", status: "Active", trailName: "Pacific Crest Trail")
             ]
         ),
         Trail(
@@ -53,8 +53,8 @@ struct SearchTrailsView: View {
             imageName: "grizzlypeak",
             mapImageName: "grizzlypeak_map",
             hazards: [
-                Hazard(type: "Wildfire Risk", severity: "High", description: "Dry vegetation and recent heat wave increase fire danger.", reportedDate: "Today", status: "Active"),
-                Hazard(type: "Loose Gravel", severity: "Low", description: "Loose gravel on steep turns near the summit area.", reportedDate: "2 days ago", status: "Active")
+                Hazard(type: "Wildfire Risk", severity: "High", description: "Dry vegetation and recent heat wave increase fire danger.", reportedDate: "Today", status: "Active", trailName: "Grizzly Peak Trail"),
+                Hazard(type: "Loose Gravel", severity: "Low", description: "Loose gravel on steep turns near the summit area.", reportedDate: "2 days ago", status: "Active", trailName: "Grizzly Peak Trail")
             ]
         ),
         Trail(
@@ -66,8 +66,8 @@ struct SearchTrailsView: View {
             imageName: "lakeanza",
             mapImageName: "lakeanza_map",
             hazards: [
-                Hazard(type: "Wildlife", severity: "Medium", description: "Coyote sightings reported near trailhead. Keep pets leashed.", reportedDate: "Yesterday", status: "Active"),
-                Hazard(type: "Trail Condition", severity: "Low", description: "Some muddy sections after recent rain.", reportedDate: "3 days ago", status: "Active")
+                Hazard(type: "Wildlife", severity: "Medium", description: "Coyote sightings reported near trailhead. Keep pets leashed.", reportedDate: "Yesterday", status: "Active", trailName: "Tilden Park Lake Anza Loop"),
+                Hazard(type: "Trail Condition", severity: "Low", description: "Some muddy sections after recent rain.", reportedDate: "3 days ago", status: "Active", trailName: "Tilden Park Lake Anza Loop")
             ]
         ),
         Trail(
@@ -79,8 +79,8 @@ struct SearchTrailsView: View {
             imageName: "claremontcanyon",
             mapImageName: "claremontcanyon_map",
             hazards: [
-                Hazard(type: "Heat Warning", severity: "Medium", description: "Temperatures expected to reach 95°F. Bring extra water.", reportedDate: "Today", status: "Active"),
-                Hazard(type: "Trail Closure", severity: "High", description: "Partial closure due to downed tree near mile 1.2.", reportedDate: "4 hours ago", status: "Active")
+                Hazard(type: "Heat Warning", severity: "Medium", description: "Temperatures expected to reach 95°F. Bring extra water.", reportedDate: "Today", status: "Active", trailName: "Claremont Canyon Fire Trail"),
+                Hazard(type: "Trail Closure", severity: "High", description: "Partial closure due to downed tree near mile 1.2.", reportedDate: "4 hours ago", status: "Active", trailName: "Claremont Canyon Fire Trail")
             ]
         )
     ]
@@ -108,7 +108,7 @@ struct SearchTrailsView: View {
                             Image(trail.imageName)
                                 .resizable()
                                 .aspectRatio(contentMode: .fill)
-                                .frame(height: 200)
+                                .frame(width: 350, height: 200)
                                 .clipped()
                                 .cornerRadius(12)
 
@@ -127,3 +127,22 @@ struct SearchTrailsView: View {
         }
     }
 }
+
+struct SearchBar: View {
+    @Binding var text: String
+    
+    var body: some View {
+        HStack {
+            Image(systemName: "magnifyingglass")
+                .foregroundColor(.gray)
+            TextField("Search trails...", text: $text)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+        }
+    }
+}
+
+#Preview {
+    NavigationView {
+        SearchTrailsView()
+    }
+} 
