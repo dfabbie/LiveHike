@@ -101,6 +101,8 @@ struct SearchTrailsView: View {
             VStack {
                 SearchBar(text: $searchText)
                     .padding(.horizontal)
+                    .accessibilityLabel("Search trails")
+                    .accessibilityHint("Type to search for trails by name or location")
 
                 List(filteredTrails) { trail in
                     NavigationLink(destination: TrailHazardsView(trail: trail)) {
@@ -111,17 +113,24 @@ struct SearchTrailsView: View {
                                 .frame(width: 350, height: 200)
                                 .clipped()
                                 .cornerRadius(12)
+                                .accessibilityLabel("Trail image for \(trail.name)")
+                                .accessibilityRemoveTraits(.isImage)
 
                             Text(trail.name)
                                 .font(.headline)
+                                .accessibilityAddTraits(.isHeader)
                             Text(trail.location)
                                 .font(.subheadline)
                                 .foregroundColor(.gray)
                         }
                         .padding(.vertical, 4)
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("\(trail.name), located in \(trail.location)")
+                        .accessibilityHint("Double tap to view trail hazards and details")
                     }
                 }
                 .listStyle(.plain)
+                .accessibilityLabel("List of hiking trails")
             }
             .navigationTitle("Search Trails")
         }
@@ -135,8 +144,11 @@ struct SearchBar: View {
         HStack {
             Image(systemName: "magnifyingglass")
                 .foregroundColor(.gray)
+                .accessibilityHidden(true)
             TextField("Search trails...", text: $text)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
+                .accessibilityLabel("Search trails")
+                .accessibilityHint("Type to search for trails by name or location")
         }
     }
 }
