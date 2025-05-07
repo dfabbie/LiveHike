@@ -7,7 +7,7 @@ struct Hazard: Identifiable {
     let type: String
     let severity: String
     let description: String
-    let reportedDate: Date
+    let reportedDate: String
     let status: String
     let trailName: String
     
@@ -27,12 +27,15 @@ struct TrailHazardsView: View {
                 .aspectRatio(contentMode: .fit)
                 .cornerRadius(10)
                 .padding(.bottom)
+                .accessibilityLabel("Trail map for \(trail.name)")
+                .accessibilityHint("Shows the trail route and location")
 
             ForEach(trail.hazards) { hazard in
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
                         Text(hazard.type)
                             .font(.headline)
+                            .accessibilityAddTraits(.isHeader)
                         Spacer()
                         Text(hazard.severity)
                             .font(.subheadline)
@@ -41,13 +44,18 @@ struct TrailHazardsView: View {
                             .padding(.vertical, 4)
                             .background(severityColor(hazard.severity).opacity(0.2))
                             .cornerRadius(8)
+                            .accessibilityLabel("Severity: \(hazard.severity)")
                     }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("\(hazard.type) - \(hazard.severity) severity")
 
                     Text(hazard.description)
                         .font(.body)
+                        .accessibilityLabel("Description: \(hazard.description)")
 
                     HStack {
                         Image(systemName: "clock")
+                            .accessibilityHidden(true)
                         Text(hazard.reportedDate)
                         Spacer()
                         Text(hazard.status)
@@ -55,11 +63,16 @@ struct TrailHazardsView: View {
                     }
                     .font(.caption)
                     .foregroundColor(.secondary)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Reported \(hazard.reportedDate), Status: \(hazard.status)")
                 }
                 .padding(.vertical, 6)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Hazard: \(hazard.type). \(hazard.description). Reported \(hazard.reportedDate). Status: \(hazard.status)")
             }
         }
         .navigationTitle("\(trail.name) Hazards")
+        .accessibilityLabel("Hazards for \(trail.name)")
     }
 
     private func severityColor(_ severity: String) -> Color {
@@ -71,4 +84,6 @@ struct TrailHazardsView: View {
         }
     }
 }
+
+
 
